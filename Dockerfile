@@ -1,77 +1,47 @@
-# Stage 1: Build stage with full Alpine to install packages
+# Stage 1: Build stage to install Python packages
 FROM alpine:3.23 AS builder
 
-# Install all required packages
+# Install Python and pip
 RUN apk update && \
     apk add --no-cache \
     python3 \
-    py3-pip \
-    ffmpeg \
-    curl \
-    wget \
-    bash
+    py3-pip
 
 # Install yt-dlp and gallery-dl via pip
 RUN pip3 install --no-cache-dir --break-system-packages \
     yt-dlp \
     gallery-dl
 
-# Create wrapper scripts
-RUN echo '#!/bin/bash\npython3 -m yt_dlp "$@"' > /usr/local/bin/yt-dlp && \
-    chmod +x /usr/local/bin/yt-dlp
-
-RUN echo '#!/bin/bash\npython3 -m gallery_dl "$@"' > /usr/local/bin/gallery-dl && \
-    chmod +x /usr/local/bin/gallery-dl
-
 # Stage 2: Final image based on n8n
 FROM docker.n8n.io/n8nio/n8n:latest
 
-# Switch to root to copy files
+# Switch to root to install packages
 USER root
 
-# Copy installed packages and binaries from builder stage
-COPY --from=builder /usr/bin/python3* /usr/bin/
-COPY --from=builder /usr/bin/ffmpeg /usr/bin/
-COPY --from=builder /usr/bin/ffprobe /usr/bin/
-COPY --from=builder /usr/bin/curl /usr/bin/
-COPY --from=builder /usr/bin/wget /usr/bin/
-COPY --from=builder /bin/bash /bin/
-COPY --from=builder /usr/lib/python3* /usr/lib/
-COPY --from=builder /usr/lib/libpython* /usr/lib/
-COPY --from=builder /usr/lib/libav* /usr/lib/
-COPY --from=builder /usr/lib/libsw* /usr/lib/
-COPY --from=builder /usr/lib/libpost* /usr/lib/
-COPY --from=builder /usr/lib/libx264* /usr/lib/
-COPY --from=builder /usr/lib/libx265* /usr/lib/
-COPY --from=builder /usr/lib/libvpx* /usr/lib/
-COPY --from=builder /usr/lib/libopus* /usr/lib/
-COPY --from=builder /usr/lib/libvorbis* /usr/lib/
-COPY --from=builder /usr/lib/libogg* /usr/lib/
-COPY --from=builder /usr/lib/libtheo* /usr/lib/
-COPY --from=builder /usr/lib/libcurl* /usr/lib/
-COPY --from=builder /usr/lib/libva* /usr/lib/
-COPY --from=builder /usr/lib/libdrm* /usr/lib/
-COPY --from=builder /usr/lib/libvdpau* /usr/lib/
-COPY --from=builder /usr/lib/libmfx* /usr/lib/
-COPY --from=builder /usr/lib/libaom* /usr/lib/
-COPY --from=builder /usr/lib/libdav1d* /usr/lib/
-COPY --from=builder /usr/lib/libmp3lame* /usr/lib/
-COPY --from=builder /usr/lib/libfdk-aac* /usr/lib/
-COPY --from=builder /usr/lib/libwebp* /usr/lib/
-COPY --from=builder /usr/lib/libssl* /usr/lib/
-COPY --from=builder /usr/lib/libcrypto* /usr/lib/
-COPY --from=builder /usr/lib/libz* /usr/lib/
-COPY --from=builder /usr/lib/libbz2* /usr/lib/
-COPY --from=builder /usr/lib/libexpat* /usr/lib/
-COPY --from=builder /usr/lib/libffi* /usr/lib/
-COPY --from=builder /usr/lib/libnghttp2* /usr/lib/
-COPY --from=builder /usr/lib/libbrotli* /usr/lib/
-COPY --from=builder /lib/ld-musl* /lib/
-COPY --from=builder /usr/lib/libreadline* /usr/lib/
-COPY --from=builder /usr/lib/libncurses* /usr/lib/
-COPY --from=builder /usr/lib/python3*/site-packages/ /usr/lib/python3.12/site-packages/
+# Install ffmpeg and other dependencies using the n8n base package manager
+# Check if apk exists, if not try apt-get
+RUN if command -v apk >/dev/null 2>&1; then \
+        apk update && apk add --no-cache ffmpeg curl wget; \
+    elif command -v apt-get >/dev/null 2>&1; then \
+        apt-get update && apt-get install -y --no-install-recommends ffmpeg curl wget && rm -rf /var/lib/apt/lists/*; \
+    else \
+        echo "No package manager found" && exit 1; \
+    fi
 
-# Create wrapper scripts directly in final stage (using sh instead of bash)
+# Install Python pip if not present
+RUN if ! command -v pip3 >/dev/null 2>&1 && ! command -v pip >/dev/null 2>&1; then \
+        if command -v apk >/dev/null 2>&1; then \
+            apk add --no-cache py3-pip; \
+        elif command -v apt-get >/dev/null 2>&1; then \
+            apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*; \
+        fi \
+    fi
+
+# Install yt-dlp and gallery-dl directly in the n8n image
+RUN pip3 install --break-system-packages yt-dlp gallery-dl 2>/dev/null || \
+    pip3 install yt-dlp gallery-dl
+
+# Create wrapper scripts in /usr/local/bin
 RUN echo '#!/bin/sh' > /usr/local/bin/yt-dlp && \
     echo 'exec python3 -m yt_dlp "$@"' >> /usr/local/bin/yt-dlp && \
     chmod +x /usr/local/bin/yt-dlp
@@ -80,7 +50,7 @@ RUN echo '#!/bin/sh' > /usr/local/bin/gallery-dl && \
     echo 'exec python3 -m gallery_dl "$@"' >> /usr/local/bin/gallery-dl && \
     chmod +x /usr/local/bin/gallery-dl
 
-# Verify installations (skip ffmpeg full check, just test existence)
+# Verify installations
 RUN python3 --version && \
     test -f /usr/bin/ffmpeg && \
     /usr/local/bin/yt-dlp --version && \
