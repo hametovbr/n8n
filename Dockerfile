@@ -67,9 +67,16 @@ COPY --from=builder /usr/lib/libffi* /usr/lib/
 COPY --from=builder /usr/lib/libnghttp2* /usr/lib/
 COPY --from=builder /usr/lib/libbrotli* /usr/lib/
 COPY --from=builder /lib/ld-musl* /lib/
-COPY --from=builder /usr/local/bin/yt-dlp /usr/local/bin/
-COPY --from=builder /usr/local/bin/gallery-dl /usr/local/bin/
 COPY --from=builder /usr/lib/python3*/site-packages/ /usr/lib/python3.12/site-packages/
+
+# Create wrapper scripts directly in final stage
+RUN echo '#!/bin/bash' > /usr/local/bin/yt-dlp && \
+    echo 'python3 -m yt_dlp "$@"' >> /usr/local/bin/yt-dlp && \
+    chmod +x /usr/local/bin/yt-dlp
+
+RUN echo '#!/bin/bash' > /usr/local/bin/gallery-dl && \
+    echo 'python3 -m gallery_dl "$@"' >> /usr/local/bin/gallery-dl && \
+    chmod +x /usr/local/bin/gallery-dl
 
 # Verify installations (skip ffmpeg full check, just test existence)
 RUN python3 --version && \
