@@ -28,7 +28,6 @@ COPY --from=builder /usr/lib/libpython3.12.so* /usr/lib/
 # Copy ffmpeg binaries
 COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/bin/ffprobe /usr/bin/ffprobe
-COPY --from=builder /usr/bin/ffplay /usr/bin/ffplay
 
 # Copy ALL libraries from Alpine to avoid missing dependencies
 # This is simpler than tracking individual libraries
