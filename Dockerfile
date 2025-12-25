@@ -22,6 +22,11 @@ FROM docker.n8n.io/n8nio/n8n:latest
 # Switch to root to copy files
 USER root
 
+# Copy Python from builder
+COPY --from=builder /usr/bin/python3* /usr/bin/
+COPY --from=builder /usr/lib/python3.12 /usr/lib/python3.12
+COPY --from=builder /usr/lib/libpython3.12.so* /usr/lib/
+
 # Copy ffmpeg and related binaries
 COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/bin/ffprobe /usr/bin/ffprobe
@@ -53,11 +58,16 @@ COPY --from=builder /usr/lib/libmp3lame.so* /usr/lib/
 COPY --from=builder /usr/lib/libwebp.so* /usr/lib/
 COPY --from=builder /usr/lib/libwebpmux.so* /usr/lib/
 
-# Copy Python site-packages with yt-dlp and gallery-dl
-COPY --from=builder /usr/lib/python3.12/site-packages/yt_dlp /usr/local/lib/python3.12/site-packages/yt_dlp
-COPY --from=builder /usr/lib/python3.12/site-packages/yt_dlp-*.dist-info /usr/local/lib/python3.12/site-packages/
-COPY --from=builder /usr/lib/python3.12/site-packages/gallery_dl /usr/local/lib/python3.12/site-packages/gallery_dl
-COPY --from=builder /usr/lib/python3.12/site-packages/gallery_dl-*.dist-info /usr/local/lib/python3.12/site-packages/
+# Copy essential system libraries for Python and ffmpeg
+COPY --from=builder /lib/ld-musl-*.so.1 /lib/
+COPY --from=builder /usr/lib/libz.so* /usr/lib/
+COPY --from=builder /usr/lib/libbz2.so* /usr/lib/
+COPY --from=builder /usr/lib/libexpat.so* /usr/lib/
+COPY --from=builder /usr/lib/libffi.so* /usr/lib/
+COPY --from=builder /usr/lib/libssl.so* /usr/lib/
+COPY --from=builder /usr/lib/libcrypto.so* /usr/lib/
+
+# Python site-packages are already in /usr/lib/python3.12 copied above
 
 # Create wrapper scripts
 RUN echo '#!/bin/sh' > /usr/local/bin/yt-dlp && \
