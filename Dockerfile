@@ -69,12 +69,13 @@ COPY --from=builder /usr/lib/libbrotli* /usr/lib/
 COPY --from=builder /lib/ld-musl* /lib/
 COPY --from=builder /usr/local/bin/yt-dlp /usr/local/bin/
 COPY --from=builder /usr/local/bin/gallery-dl /usr/local/bin/
+COPY --from=builder /usr/lib/python3*/site-packages/ /usr/lib/python3.12/site-packages/
 
 # Verify installations (skip ffmpeg full check, just test existence)
 RUN python3 --version && \
     test -f /usr/bin/ffmpeg && \
-    yt-dlp --version && \
-    gallery-dl --version
+    /usr/local/bin/yt-dlp --version && \
+    /usr/local/bin/gallery-dl --version
 
 # Switch back to node user for security
 USER node
