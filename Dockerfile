@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     ffmpeg \
     imagemagick \
     imagemagick-jpeg \
-    imagemagick-webp
+    imagemagick-webp \
+    potrace 
 
 RUN pip3 install --no-cache-dir --break-system-packages yt-dlp gallery-dl
 
@@ -22,6 +23,7 @@ COPY --from=builder /usr/bin/convert /usr/bin/convert
 COPY --from=builder /usr/bin/identify /usr/bin/identify
 COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/bin/python3* /usr/bin/
+COPY --from=builder /usr/bin/potrace /usr/bin/potrace
 
 # 2. Копируем библиотеки
 COPY --from=builder /usr/lib/ /usr/lib/
