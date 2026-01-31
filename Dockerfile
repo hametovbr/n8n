@@ -7,8 +7,7 @@ RUN apk update && \
     python3 \
     py3-pip \
     ffmpeg \
-    ffmpeg-libs \
-    imagemagick
+    ffmpeg-libs
 
 # Install yt-dlp and gallery-dl via pip
 RUN pip3 install --no-cache-dir --break-system-packages \
@@ -20,6 +19,15 @@ FROM docker.n8n.io/n8nio/n8n:latest
 
 # Switch to root to copy files
 USER root
+
+# Устанавливаем ImageMagick и необходимые зависимости прямо здесь
+RUN apk add --no-cache \
+    imagemagick \
+    imagemagick-jpeg \
+    imagemagick-webp \
+    imagemagick-pdf \
+    libwebp \
+    libjpeg-turbo
 
 # Copy Python from builder
 COPY --from=builder /usr/bin/python3* /usr/bin/
@@ -48,6 +56,7 @@ RUN echo '#!/bin/sh' > /usr/local/bin/gallery-dl && \
 RUN python3 --version && \
     ffmpeg -version && \
     ffprobe -version && \
+    magick -version && \
     python3 -c "import yt_dlp; print('yt-dlp:', yt_dlp.version.__version__)" && \
     python3 -c "import gallery_dl; print('gallery-dl:', gallery_dl.version.__version__)"
 
