@@ -8,7 +8,8 @@ RUN apk update && \
     py3-pip \
     ffmpeg \
     ffmpeg-libs \
-    imagemagick
+    imagemagick \
+    potrace
 
 # Install yt-dlp and gallery-dl via pip
 RUN pip3 install --no-cache-dir --break-system-packages \
