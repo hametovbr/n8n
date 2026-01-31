@@ -2,13 +2,12 @@ FROM docker.n8n.io/n8nio/n8n:latest
 
 USER root
 
-# В Debian используем apt-get вместо apk
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt update && apt install -y --no-install-recommends \
     python3 \
     python3-pip \
     ffmpeg \
     imagemagick \
-    && apt-get clean \
+    && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install yt-dlp and gallery-dl via pip
